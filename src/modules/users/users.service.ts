@@ -15,6 +15,12 @@ import {
   UserQueryRepository,
 } from './repositories/users.repository';
 
+export enum UserErrorMessageEnum {
+  NotFoundUser = '존재하지 않는 유저입니다.',
+  NotMatchedPassword = '비밀번호가 맞지 않습니다.',
+  NotEnteredNewPassword = '새로운 비밀번호가 입력되지 않았습니다.',
+}
+
 @Service()
 export class UsersService {
   constructor(
@@ -33,7 +39,9 @@ export class UsersService {
     _user.email = email;
     _user.password = hash;
     if (nickname) _user.nickname = nickname;
-    return this.userMutationRepository.save(_user);
+    const user = await this.userMutationRepository.save(_user);
+    delete user.password;
+    return user;
   }
 
   async update({
@@ -43,19 +51,22 @@ export class UsersService {
     newPassword,
   }: UserId & UpdateUserDto): Promise<User> {
     const user = await this.userQueryRepository.findOne({ userId });
-    if (!user) throw new NotFoundException('존재하지 않는 유저입니다.');
+    if (!user) throw new NotFoundException(UserErrorMessageEnum.NotFoundUser);
 
     if (nickname) user.nickname = nickname;
     if (password) {
       if (!newPassword)
-        throw new BadRequestException('변경할 비밀번호를 입력해 주세요.');
+        throw new BadRequestException(
+          UserErrorMessageEnum.NotEnteredNewPassword,
+        );
 
       const isMatch = await this.cryptoService.compareHashAndPlanText({
         hash: user.password,
         plainText: password,
       });
 
-      if (!isMatch) throw new ForbiddenException('비밀번호가 맞지 않습니다.');
+      if (!isMatch)
+        throw new ForbiddenException(UserErrorMessageEnum.NotMatchedPassword);
 
       user.password = await this.cryptoService.hashing({
         plainText: newPassword,
@@ -66,17 +77,26 @@ export class UsersService {
   }
 
   async findAll(): Promise<Array<User>> {
-    return this.userQueryRepository.find();
+    return this.userQueryRepository.find({
+      select: ['userId', 'email', 'nickname', 'createdAt', 'updatedAt'],
+    });
   }
 
   async findOne({ userId }: UserId) {
     const user = await this.userQueryRepository.findOne({ userId });
-    if (!user) throw new NotFoundException('존재하지 않는 유저입니다.');
+    if (!user) throw new NotFoundException(UserErrorMessageEnum.NotFoundUser);
 
     return user;
   }
 
-  async remove({ userId }: UserId) {
-    return `This action removes a #${userId} user`;
+  async remove({ userId }: UserId): Promise<void> {
+    const user = await this.userQueryRepository.findOne({ userId });
+    if (!user) throw new NotFoundException(UserErrorMessageEnum.NotFoundUser);
+
+    console.log(user);
+    const result = await this.userQueryRepository.delete(user);
+
+    console.log(result.affected);
+    return;
   }
 }
