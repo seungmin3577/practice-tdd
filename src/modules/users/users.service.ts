@@ -1,7 +1,15 @@
-import { Inject } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  NotFoundException,
+} from '@nestjs/common';
+import { CryptoService } from '../../providers/crypto.provider';
 import { Service } from 'typedi';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UserId } from './dto/find-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './entities/user.entity';
 import {
   UserMutationRepository,
   UserQueryRepository,
@@ -14,24 +22,61 @@ export class UsersService {
     private userQueryRepository: UserQueryRepository,
     @Inject('userMutationRepository')
     private userMutationRepository: UserMutationRepository,
+    @Inject(CryptoService)
+    private cryptoService: CryptoService,
   ) {}
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+
+  async create({ email, password, nickname }: CreateUserDto): Promise<User> {
+    const hash = await this.cryptoService.hashing({ plainText: password });
+
+    const _user = new User();
+    _user.email = email;
+    _user.password = hash;
+    if (nickname) _user.nickname = nickname;
+    return this.userMutationRepository.save(_user);
   }
 
-  findAll() {
+  async update({
+    userId,
+    nickname,
+    password,
+    newPassword,
+  }: UserId & UpdateUserDto): Promise<User> {
+    const user = await this.userQueryRepository.findOne({ userId });
+    if (!user) throw new NotFoundException('존재하지 않는 유저입니다.');
+
+    if (nickname) user.nickname = nickname;
+    if (password) {
+      if (!newPassword)
+        throw new BadRequestException('변경할 비밀번호를 입력해 주세요.');
+
+      const isMatch = await this.cryptoService.compareHashAndPlanText({
+        hash: user.password,
+        plainText: password,
+      });
+
+      if (!isMatch) throw new ForbiddenException('비밀번호가 맞지 않습니다.');
+
+      user.password = await this.cryptoService.hashing({
+        plainText: newPassword,
+      });
+    }
+
+    return this.userMutationRepository.save(user);
+  }
+
+  async findAll(): Promise<Array<User>> {
     return this.userQueryRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne({ userId }: UserId) {
+    const user = await this.userQueryRepository.findOne({ userId });
+    if (!user) throw new NotFoundException('존재하지 않는 유저입니다.');
+
+    return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove({ userId }: UserId) {
+    return `This action removes a #${userId} user`;
   }
 }

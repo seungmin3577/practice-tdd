@@ -2,8 +2,9 @@ import { plainToClass, Type } from 'class-transformer';
 import { IsEnum, IsNumber, IsString, validateSync } from 'class-validator';
 
 enum Environment {
+  테스트 = 'test',
   개발 = 'dev',
-  테스트 = 'staging',
+  스테이징 = 'staging',
   제품 = 'production',
 }
 
@@ -16,17 +17,30 @@ class EnvironmentVariables {
   readonly PORT: number;
 
   @IsString()
-  readonly DATABASE_HOST: string;
+  readonly QUERY_DATABASE_HOST: string;
 
   @Type(() => Number)
   @IsNumber()
-  readonly DATABASE_PORT: number;
+  readonly QUERY_DATABASE_PORT: number;
 
   @IsString()
-  readonly DATABASE_USER: string;
+  readonly QUERY_DATABASE_USER: string;
 
   @IsString()
-  readonly DATABASE_PASSWORD: string;
+  readonly QUERY_DATABASE_PASSWORD: string;
+
+  @IsString()
+  readonly MUTATION_DATABASE_HOST: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  readonly MUTATION_DATABASE_PORT: number;
+
+  @IsString()
+  readonly MUTATION_DATABASE_USER: string;
+
+  @IsString()
+  readonly MUTATION_DATABASE_PASSWORD: string;
 }
 
 export function validate(config: Record<string, unknown>) {

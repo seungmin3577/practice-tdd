@@ -9,10 +9,14 @@ import path from 'path';
 
 const {
   NODE_ENV,
-  DATABASE_HOST,
-  DATABASE_PORT,
-  DATABASE_USER,
-  DATABASE_PASSWORD,
+  QUERY_DATABASE_HOST,
+  QUERY_DATABASE_PORT,
+  QUERY_DATABASE_USER,
+  QUERY_DATABASE_PASSWORD,
+  MUTATION_DATABASE_HOST,
+  MUTATION_DATABASE_PORT,
+  MUTATION_DATABASE_USER,
+  MUTATION_DATABASE_PASSWORD,
   DATABASE_NAME,
 } = process.env;
 
@@ -27,28 +31,32 @@ export const databaseConfig = registerAs(
     ({
       query: {
         name: 'queryConnection',
-        type: 'mysql',
-        host: DATABASE_HOST ?? '127.0.0.1',
-        port: +DATABASE_PORT ?? 3306,
-        username: DATABASE_USER,
-        password: DATABASE_PASSWORD,
-        database: DATABASE_NAME,
+        type: NODE_ENV === 'test' ? 'sqlite' : 'mysql',
+        host:
+          NODE_ENV === 'test' ? undefined : QUERY_DATABASE_HOST ?? '127.0.0.1',
+        port: NODE_ENV === 'test' ? undefined : +QUERY_DATABASE_PORT ?? 3306,
+        username: NODE_ENV === 'test' ? undefined : QUERY_DATABASE_USER,
+        password: NODE_ENV === 'test' ? undefined : QUERY_DATABASE_PASSWORD,
+        database: NODE_ENV === 'test' ? '.db/test.db' : DATABASE_NAME,
         entities: [path.join(__dirname, '/../**/*.entity{.ts,.js}')],
         synchronize: false,
-        logging: NODE_ENV === 'product' ? false : true,
+        logging: NODE_ENV === 'test' ? false : true,
         namingStrategy: new SnakeNamingStrategy(),
       },
       mutation: {
         name: 'mutationConnection',
-        type: 'mysql',
-        host: DATABASE_HOST ?? '127.0.0.1',
-        port: +DATABASE_PORT ?? 3306,
-        username: DATABASE_USER,
-        password: DATABASE_PASSWORD,
-        database: DATABASE_NAME,
+        type: NODE_ENV === 'test' ? 'sqlite' : 'mysql',
+        host:
+          NODE_ENV === 'test'
+            ? undefined
+            : MUTATION_DATABASE_HOST ?? '127.0.0.1',
+        port: NODE_ENV === 'test' ? undefined : +MUTATION_DATABASE_PORT ?? 3306,
+        username: NODE_ENV === 'test' ? undefined : MUTATION_DATABASE_USER,
+        password: NODE_ENV === 'test' ? undefined : MUTATION_DATABASE_PASSWORD,
+        database: NODE_ENV === 'test' ? '.db/test.db' : DATABASE_NAME,
         entities: [path.join(__dirname, '/../**/*.entity{.ts,.js}')],
         synchronize: NODE_ENV === 'product' ? false : true,
-        logging: NODE_ENV === 'product' ? false : true,
+        logging: NODE_ENV === 'test' ? false : true,
         namingStrategy: new SnakeNamingStrategy(),
       },
     } as DatabaseConfigurations),

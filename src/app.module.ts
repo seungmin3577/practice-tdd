@@ -10,6 +10,7 @@ import { UsersModule } from './modules/users/users.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
+      envFilePath: ['.env'],
       load: [databaseConfig],
       isGlobal: true,
       validate,
