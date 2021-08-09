@@ -40,11 +40,11 @@ export class User {
   public nickname?: string | null;
 
   @CreateDateColumn()
-  public createdAt: Date;
+  readonly createdAt: Date;
 
   @UpdateDateColumn()
-  public updatedAt: Date;
+  readonly updatedAt: Date;
 
   @DeleteDateColumn()
-  public deletedAt: Date;
+  readonly deletedAt: Date;
 }
